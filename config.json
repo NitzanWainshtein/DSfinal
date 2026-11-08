@@ -1,0 +1,164 @@
+{
+  "created_utc": "2026-11-08T13:56:17+00:00",
+  "data_file": "data/hour.csv",
+  "periods": {
+    "train": [
+      "2011-01-01",
+      "2012-04-30"
+    ],
+    "validation": [
+      "2012-05-01",
+      "2012-07-31"
+    ],
+    "test": [
+      "2012-08-01",
+      "2012-12-31"
+    ]
+  },
+  "availability_rule": "Forecast for hour t uses calendar fields of t and count/weather of completed hours s<t, by exact timestamp lookup.",
+  "features": {
+    "calendar_categorical": [
+      "hour",
+      "weekday",
+      "month"
+    ],
+    "calendar_binary": [
+      "holiday",
+      "workingday"
+    ],
+    "historical_numeric": [
+      "prev_hour_count",
+      "prev_day_count",
+      "prev_week_count",
+      "prev_24h_mean",
+      "prev_hour_temp",
+      "prev_hour_hum",
+      "prev_hour_windspeed"
+    ],
+    "lags_hours": {
+      "prev_hour_count": 1,
+      "prev_day_count": 24,
+      "prev_week_count": 168,
+      "weather": 1
+    },
+    "prev_24h_mean": "mean of t-24..t-1, all 24 required",
+    "missing_rule": "training median + missing flag",
+    "unseen_category_rule": "all-zero one-hot block",
+    "constant_column_rule": "scale 1 (centred only)",
+    "n_features_full": 59
+  },
+  "grids": {
+    "ridge": [
+      0.001,
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0
+    ],
+    "lasso": [
+      0.001,
+      0.003,
+      0.01,
+      0.03,
+      0.1,
+      0.3,
+      1.0,
+      3.0,
+      10.0,
+      30.0
+    ],
+    "poisson": [
+      1e-07,
+      1e-06,
+      1e-05,
+      0.0001,
+      0.001,
+      0.01,
+      0.1
+    ],
+    "bayes": [
+      1e-08,
+      1e-06,
+      0.0001,
+      0.01,
+      0.1,
+      1.0
+    ],
+    "ridge_calendar": [
+      0.001,
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0
+    ]
+  },
+  "selected": {
+    "baseline": {
+      "setting": "lookup",
+      "settings": {
+        "groups": "hour x workingday",
+        "fallback": "overall training mean"
+      },
+      "validation_mae": 123.8847056235566
+    },
+    "ridge": {
+      "setting": "alpha=0.001",
+      "settings": {
+        "alpha": 0.001
+      },
+      "validation_mae": 50.22829675649314
+    },
+    "lasso": {
+      "setting": "alpha=0.001",
+      "settings": {
+        "alpha": 0.001
+      },
+      "validation_mae": 50.231322109331394
+    },
+    "poisson": {
+      "setting": "alpha=1e-07",
+      "settings": {
+        "alpha": 1e-07
+      },
+      "validation_mae": 83.9606084277949
+    },
+    "bayes": {
+      "setting": "alpha=1e-08",
+      "settings": {
+        "alpha_prior_precision": 1e-08,
+        "sigma2": 2349.1214628172297,
+        "sigma2_rule": "training residual fixed point"
+      },
+      "validation_mae": 50.228288912554476
+    }
+  },
+  "default_model": "bayes",
+  "tie_rule": "lowest validation MAE; within a method the first value in grid order; across methods order baseline, ridge, lasso, poisson, bayes",
+  "clipping": "Ridge/Lasso/Bayesian point forecasts clipped at 0 for display and MAE/RMSE; raw mean kept.",
+  "lasso_zero_tolerance": 1e-08,
+  "count_bins_edges": [
+    0,
+    7,
+    23,
+    49,
+    81,
+    116,
+    154,
+    200,
+    263,
+    369
+  ],
+  "app_forecast_tolerance": 1e-06,
+  "training_time_definition": "seconds to fit preprocessing on training inputs plus the final model fit at the selected setting (excludes candidate search)",
+  "versions": {
+    "python": "3.13.18",
+    "numpy": "2.5.3",
+    "pandas": "3.0.5",
+    "scikit_learn": "1.9.1",
+    "scipy": "1.18.1"
+  }
+}

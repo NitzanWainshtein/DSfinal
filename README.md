@@ -1,0 +1,84 @@
+# Bike-Rental Forecast Dashboard
+
+Final project, **Foundations of Data Science** (Elad Aigner-Horev), practical project **Option B: Classical Data Analysis**.
+
+A Streamlit dashboard that replays historical hourly forecasts of total Capital Bikeshare rentals, compares five statistical methods (seasonal baseline, Ridge, Lasso, Poisson regression, Bayesian linear regression) and investigates their errors and uncertainty.
+
+## Deliverables
+
+| Item | Location |
+|---|---|
+| Dashboard | [`app.py`](app.py) |
+| Training / evaluation script | [`train_evaluate.py`](train_evaluate.py) |
+| Modules | [`data.py`](data.py), [`features.py`](features.py), [`models.py`](models.py) |
+| Executable checks and record of results | [`checks/`](checks/), [`CHECKS.md`](CHECKS.md) |
+| Configuration and selected settings | [`config.json`](config.json) |
+| Fitted models and preprocessing | [`models/`](models/) |
+| Saved results | [`outputs/`](outputs/) |
+| Written report | [`report.pdf`](report.pdf) *(draft source: [`docs/report_draft.md`](docs/report_draft.md))* |
+| AI development log | [`ai_log.md`](ai_log.md) |
+| Screen recording (~3 min) | *add link here* |
+
+## Data
+
+UCI Machine Learning Repository, **Bike Sharing Dataset**, file `hour.csv` (Capital Bikeshare, Washington D.C., 2011-2012; 17,379 hourly rows). Licence CC BY 4.0.
+
+> Fanaee-T, H. and Gama, J. (2013). Event labeling combining ensemble detectors and background knowledge. *Progress in Artificial Intelligence*, 2, 113-127. Dataset: https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset
+
+The original `hour.csv` is included at `data/hour.csv` (SHA-256 `e03de4ee4ef4dc376ac6e04bf829673c6269e8eba5c60fa121640fa2f829504f`). To obtain it yourself: download the ZIP from the UCI page above, extract `hour.csv` and place it in `data/`.
+
+## Installation and run instructions
+
+Requires **Python 3.13** (tested with 3.13.18). From a fresh checkout:
+
+```bash
+python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+python -m pip install -r requirements.txt
+python train_evaluate.py                               # ~10 s: regenerates config.json, models/, outputs/
+python -m pytest checks                                # ~15 s: 32 checks
+streamlit run app.py                                   # opens http://localhost:8501
+```
+
+The repository already contains the saved models and results, so `streamlit run app.py` works straight after installing dependencies. `train_evaluate.py` is deterministic: rerunning it reproduces the same files (except the creation time in `config.json` and training-time measurements). It reads `data/hour.csv` (or `--data PATH`) and writes, in order:
+
+1. `outputs/data_audit.csv`, `outputs/missing_hours.csv`: timestamp audit.
+2. `models/preprocessor_full.json`, `models/preprocessor_calendar.json`: training-only medians, one-hot categories, scaling, feature order.
+3. `outputs/validation_results.csv`, `outputs/lasso_coefficients.csv`: every candidate's validation score; Lasso coefficient paths.
+4. `config.json`: periods, feature rules, selected settings, default model, tie rule, count-bin edges, package versions. Written **before** any test-period score is computed.
+5. `models/{baseline,ridge,lasso,poisson,bayes}.pkl`, `models/baseline_lookup.csv`, `models/bayes_posterior.npz`: frozen models.
+6. `outputs/predictions.csv`, `outputs/metrics.csv`, `outputs/largest_errors.csv`, `outputs/count_distribution.csv`, `outputs/count_distribution_tv.json`.
+
+## Design summary
+
+* **Periods** (by target timestamp): train 2011-01-01 to 2012-04-30; validation 2012-05-01 to 2012-07-31; test 2012-08-01 to 2012-12-31.
+* **Availability rule.** A forecast for the hour starting at *t* uses the calendar fields of *t* and the count/weather of completed hours *s < t*, found by **exact timestamp lookup**. An absent source hour is missing (never the preceding CSV row).
+* **Inputs.** Hour, weekday, month (one-hot, training categories); holiday, workingday; counts at *t*-1, *t*-24, *t*-168 h; mean of the 24 counts *t*-24 ... *t*-1 (all 24 required); temp/hum/windspeed at *t*-1 h; seven missing flags. 59 encoded columns.
+* **Missing inputs** receive the training median plus a flag. Absent target hours are never scored or imputed.
+* **Selection.** Each method's setting and the default model are chosen by validation MAE; ties go to the first grid value / the simpler method (order: baseline, ridge, lasso, poisson, bayes).
+* **Clipping.** Ridge, Lasso and Bayesian point forecasts are clipped at 0 for display and MAE/RMSE; raw means are kept in `raw_mean` and (Bayesian) used for intervals.
+* **App agreement.** The dashboard rebuilds inputs and applies the loaded model; its forecast must equal `predictions.csv` within `app_forecast_tolerance` (1e-6 rentals, displayed on the Forecast screen).
+
+## Saved result files
+
+**`outputs/predictions.csv`**: one row per (period, model, target hour) for validation and test.
+`timestamp` (hour start, `YYYY-MM-DD HH:MM`), `period`, `model`, `raw_mean` (model mean before clipping, rentals/hour), `point_forecast` (scored forecast), `actual` (recorded `cnt`), `residual` (= actual - point_forecast), `abs_error`, `lo80`/`hi80`/`lo95`/`hi95` (interval endpoints; Poisson and Bayesian only, empty otherwise), `noise_var`, `coef_var`, `total_var` (Bayesian predictive variances, rentals^2; empty for other models).
+
+**`outputs/metrics.csv`**: long format; column `table` selects the section:
+* `point_scores`: full-test `n`, `mae`, `rmse`, `train_time_s` (preprocessing fit + final model fit at the selected setting, excluding candidate search), `is_default`, `validation_mae`.
+* `poisson_log_score`: `mean_log_loss` = mean of -log Pr(Y=y | mu) in nats.
+* `interval_coverage`: `model`, `level` (80/95), `group_type` (`all`, `hour`, `workingday`), `group`, `n`, `coverage` (fraction, inclusive endpoints), `mean_width` (rentals).
+* `residual_by_hour`: default model, `group` = hour of day, `n`, `mean_residual` (actual - forecast).
+
+**`outputs/validation_results.csv`**: `experiment` (`principal`, `history_calendar_only`, `history_full_inputs`), `method`, `setting`, `setting_json`, `n_hours`, `validation_mae`, `validation_rmse`, `n_nonzero_coef`/`n_coef_total` (Lasso, intercept excluded), `sigma2` (Bayesian), `selected`.
+
+**`outputs/lasso_coefficients.csv`**: `alpha`, `feature` (encoded name; `(intercept)` separate), `coefficient`, `is_zero` (|coef| <= 1e-8).
+
+**`outputs/data_audit.csv`**: per period: expected/observed/missing hours, duplicate and invalid-target exclusions, observed zero-count hours.
+
+**`outputs/count_distribution.csv`** / **`count_distribution_tv.json`**: shared bins (edges from training-count deciles, overflow bin above 369), counts and proportions for training and validation, and the binned total variation distance.
+
+**`outputs/largest_errors.csv`**: ten largest absolute test errors of the default model (ties by earlier timestamp).
+
+## Licence and attribution
+
+Code: written for this course project. Data: UCI Bike Sharing Dataset, CC BY 4.0, Fanaee-T and Gama (2013). Framework documentation: [Streamlit](https://docs.streamlit.io/), [scikit-learn](https://scikit-learn.org/stable/), [SciPy Poisson](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.poisson.html).
