@@ -11,9 +11,9 @@ header-includes:
   - \usepackage{caption}
   - \captionsetup[figure]{labelformat=empty}
   - \usepackage{needspace}
-  - \AddToHook{cmd/section/before}{\needspace{16\baselineskip}}
+  - \AddToHook{cmd/section/before}{\needspace{18\baselineskip}}
   - \sloppy
-  - \AddToHook{cmd/subsection/before}{\needspace{9\baselineskip}}
+  - \AddToHook{cmd/subsection/before}{\needspace{13\baselineskip}}
 ---
 
 > **DRAFT.** Numbers are taken from the saved results in `outputs/` and `config.json`. The team must review, rewrite in its own words where needed, and fill the TODO items before submission.
@@ -27,21 +27,32 @@ An operations analyst wants to anticipate busy hours and judge which forecasts c
 ## 1.2 Screens
 
 | Screen | What the analyst does and sees |
-|---|---|
-| **Data overview** | Date-range selector; observed / missing / excluded hour counts; hourly `cnt` series with gaps preserved; average rentals by hour and working-day status with group sizes; source rows; audit download; *Count distribution* tab (training vs validation histogram and TV). |
-| **Forecast one hour** | Test date, observed hour and model selectors; *Forecast* button; point forecast, 80%/95% intervals (or "unavailable"), Bayesian variance decomposition; *Inputs used* table with values, source times, missing flags and replacements; agreement with the saved prediction; separate *Reveal recorded count* button with signed and absolute error. Changing the hour or model clears the forecast and reveal. |
-| **Compare models** | Validation-selection summary; full-test MAE / RMSE / hours / training time with the default marked; Poisson probability score; actual-vs-forecast plot for a selected model and test date range; CSV downloads. |
-| **Inspect model behaviour** | Tabs: Regularisation (Lasso), History experiment, Interval coverage, Largest errors (row opens the hour's details), Residuals by hour. |
+|--------------|------------------------------------------------------------------|
+| **Data overview** | Tiles: observed of expected hours, missing hours by period, duplicate and invalid rows, longest gap. *The daily rhythm* by day type. *Timestamp audit*. *Demand shifted upward* (training vs validation bins, TV). *Explore a date range*: selector driving observed / missing / excluded counts, hourly `cnt` with gaps preserved, average by hour and working-day status with group sizes, source rows. Days with missing hours; field definitions; CSV downloads. |
+| **Forecast one hour** | Control row: test date, observed hour, model, *Forecast*, *Reveal recorded count* (disabled until a forecast exists). Result card: point forecast, model setting, 80% and 95% intervals on a bar (or "Intervals unavailable for this model"); the recorded count stays hidden until *Reveal*, which adds it with the signed and absolute error and whether it falls inside the intervals. Uncertainty card: Bayesian variance decomposition and agreement with the saved prediction. *Inputs used*: calendar tiles and a recent-history table with values, source hours, Observed / Missing status and training-median replacement. Changing the date, hour or model clears the forecast and reveal. |
+| **Compare models** | Tiles: default model, test MAE and RMSE, change against the seasonal baseline. *Test MAE by model* bars. Full final-test table (setting, validation MAE, test MAE / RMSE, training time, default marked); Poisson probability score. *Forecasts against recorded counts* for a chosen model and test date range; tie rule; validation candidates; CSV downloads. |
+| **Inspect model behaviour** | Tabs in order: *Interval coverage* (tiles, 80% coverage by hour, tables by hour and working-day status); *Residuals by hour*; *Largest errors* (a selected row opens that hour); *Regularisation* (each Lasso penalty, two plots, coefficients and intercept for a selected penalty, comparison across penalties); *History experiment*. |
+
+Figures 1 to 4 show the four screens at desktop width.
+
+![**Figure 1.** Data overview screen, top part (the full screen is in `docs/screenshots/data_overview.png`). Notice the audit summary (17,379 of 17,544 expected hours observed, 165 missing) and the two working-day peaks in the daily rhythm.](screenshots/data_overview_top.png){width=88%}
+
+![**Figure 2.** Forecast one hour after *Reveal*, for 2012-08-01 08:00 with the default model. Notice the forecast of 664 rentals, the recorded 681 inside both intervals, and that observation noise dominates the predictive variance.](screenshots/forecast_one_hour.png){width=88%}
+
+![**Figure 3.** Compare models screen. Notice the three linear-Gaussian models level at a test MAE near 48.96, well below Poisson and the seasonal baseline, and the default model marked in the table.](screenshots/compare_models.png){width=88%}
+
+![**Figure 4.** Inspect model behaviour, *Interval coverage* tab. Notice that observed coverage is below nominal for both models at both levels, and that Bayesian 80% coverage falls sharply at commuter hours.](screenshots/inspect_behaviour.png){width=88%}
 
 ## 1.3 Code organisation
 
 | Module | Responsibility | Key interface |
-|---|---|---|
+|------------------|-----------------------------|---------------------------------|
 | `data.py` | Read `hour.csv`, build timestamps, audit duplicates/invalid rows/missing hours, assign periods | `audit(raw) -> AuditResult(clean, missing_hours, excluded, audit_table)` |
 | `features.py` | Calendar and historical inputs by exact timestamp lookup; `Preprocessor` (training medians, one-hot, scaling) | `build_raw_features(clean, targets) -> DataFrame`; `Preprocessor.fit / transform / save / load` |
 | `models.py` | The five methods; intervals; scores | `predict_dist(raw, X) -> {raw_mean, point, lo80, hi80, lo95, hi95, noise_var, coef_var, total_var}` |
 | `train_evaluate.py` | Fit on training, select on validation, freeze, replay validation/test, write all results | `fit_select(clean)`; `main()` |
 | `app.py` | The four screens; loads saved objects, never refits | - |
+| `ui.py` | Presentation only: design tokens, one colour per model, shared Plotly template, HTML components | `inject_css()`; `chart(fig)`; `interval_bar(model, d, actual)` |
 | `checks/` | 32 executable checks (pytest) | - |
 
 Input construction never receives the target outcome: `build_raw_features` reads only the target's calendar fields and rows at earlier timestamps; the recorded `cnt` is attached afterwards for scoring (`train_evaluate.py`) or on *Reveal* (`app.py`).
@@ -71,7 +82,7 @@ No input was missing. Forecast: **664.4** rentals; 80% interval [602.1, 726.7]; 
 
 `hour.csv` has 17,379 rows, no duplicate timestamps and no invalid counts. Compared with a complete hourly calendar (17,544 hours), **165 hours are absent**: 125 in training, 0 in validation, 40 in test. The test gap includes 36 consecutive hours from 2012-10-29 01:00 to 2012-10-30 12:00; the others are isolated early-morning hours. No observed hour has `cnt = 0`. Absent hours are not scored and are never converted to zero; when an absent hour is a source for a lag, that input is missing.
 
-![**Figure 1.** Average training-period rentals by hour of day. Notice the two commuter peaks on working days (08:00 and 17:00-18:00) against the single broad midday peak on weekends and holidays.](figures/fig_hourly_pattern.png){width=100%}
+![**Figure 5.** Average training-period rentals by hour of day. Notice the two commuter peaks on working days (08:00 and 17:00-18:00) against the single broad midday peak on weekends and holidays.](figures/fig_hourly_pattern.png){width=100%}
 
 ## 2.2 Periods
 
@@ -123,7 +134,7 @@ For 2012-08-01 08:00 (section 1.5): $\mu_* = \phi^\top m = 664.378$; observation
 
 The three linear-Gaussian models reduce MAE by about 58% relative to the baseline. Their test ranking matches validation, but the differences among them (< 0.01 rentals) are negligible; validation selection should not be read as evidence that Bayesian regression forecasts better than Ridge. RMSE/MAE is about 1.5 for these models, indicating occasional large errors (section 3.7). Poisson has the worst RMSE (174.7), worse even than the baseline, because of very large overpredictions at evening peaks.
 
-![**Figure 2.** Recorded count and default-model forecast for the first test week, with the 80% interval. Notice that the forecast follows the daily cycle, but at the working-day 08:00 and 17:00 peaks the recorded count is usually above the band, and that the band's lower edge falls below zero overnight.](figures/fig_test_week.png){width=100%}
+![**Figure 6.** Recorded count and default-model forecast for the first test week, with the 80% interval. Notice that the forecast follows the daily cycle, but at the working-day 08:00 and 17:00 peaks the recorded count is usually above the band, and that the band's lower edge falls below zero overnight.](figures/fig_test_week.png){width=100%}
 
 ## 3.2 Poisson probability score
 
@@ -142,7 +153,7 @@ Both models undercover. Bayesian intervals have nearly constant width (noise var
 
 Poisson intervals are much narrower (variance $= \mu$) and miss most outcomes: hourly counts are strongly overdispersed relative to Poisson, and the mean itself is biased at peaks. Coverage is worst at commuting hours (80%: 1.3% at 06:00).
 
-![**Figure 3.** Observed 80% interval coverage by hour of day on the test period. Notice that Bayesian coverage is above the nominal 80% overnight and collapses at commuter hours (13.2% at 09:00), while Poisson stays below 80% in every hour.](figures/fig_coverage_by_hour.png){width=100%}
+![**Figure 7.** Observed 80% interval coverage by hour of day on the test period. Notice that Bayesian coverage is above the nominal 80% overnight and collapses at commuter hours (13.2% at 09:00), while Poisson stays below 80% in every hour.](figures/fig_coverage_by_hour.png){width=100%}
 
 ## 3.4 Lasso regularisation
 
@@ -153,7 +164,7 @@ Poisson intervals are much narrower (variance $= \mu$) and miss most outcomes: h
 
 At the selected 0.001, five coefficients are zero (`hour=03`, `weekday=04`, `month=10` and two weather missing flags that duplicate the previous-hour count flag). At $\alpha = 1$, only peak-hour dummies (06-09, 16, 17, 19, 20), the three count lags and the three weather inputs remain, and MAE rises by 4.4. At $\alpha = 10$ only the three count lags remain. Weekday dummies are removed early, since working-day status and recent counts already carry most of that information. Zero coefficients are properties of this penalised, correlated fit and do not show that a variable is unrelated to rentals.
 
-![**Figure 4.** Lasso validation MAE and number of non-zero coefficients against the penalty. Notice that the MAE is almost flat up to a penalty of 0.1 and rises after that, while the model shrinks from 54 non-zero coefficients at the selected 0.001 to 3 at the largest penalties.](figures/fig_lasso_path.png){width=100%}
+![**Figure 8.** Lasso validation MAE and number of non-zero coefficients against the penalty. Notice that the MAE is almost flat up to a penalty of 0.1 and rises after that, while the model shrinks from 54 non-zero coefficients at the selected 0.001 to 3 at the largest penalties.](figures/fig_lasso_path.png){width=100%}
 
 ## 3.5 Does historical information help? (validation)
 
@@ -168,7 +179,7 @@ Calendar-only minus full: **+64.94** rentals per hour. The calendar-only Ridge i
 
 Bins from training deciles (edges 0, 7, 23, 49, 81, 116, 154, 200, 263, 369 and an overflow bin). **TV = 0.279.** The largest change is the top bin, 369 and above: 10.0% of training hours vs 29.5% of validation hours. Low-count bins shrink (0-6: 9.2% to 4.0%; 81-115: 10.1% to 3.8%). Validation (May-July 2012) has more high-demand hours than the 16-month training period, which mixes winter months with 2011 levels. This helps explain why the seasonal baseline, which predicts training averages, has validation MAE 123.9, and why the Poisson log link extrapolates poorly. It does not by itself prove a cause.
 
-![**Figure 5.** Training and validation proportions of hours in each count bin (TV = 0.279). Notice the much larger share of validation hours in the top bin (29.5% against 10.0%) and the smaller share in every bin below 200 rentals.](figures/fig_count_distribution.png){width=100%}
+![**Figure 9.** Training and validation proportions of hours in each count bin (TV = 0.279). Notice the much larger share of validation hours in the top bin (29.5% against 10.0%) and the smaller share in every bin below 200 rentals.](figures/fig_count_distribution.png){width=100%}
 
 ## 3.7 Largest errors and residuals by hour (default model)
 
@@ -180,7 +191,7 @@ The ten largest absolute errors range from 304.6 to 413.8 rentals; 9 of 10 occur
 
 The pattern is systematic: underprediction as peaks build (07-08, 16-17) and overprediction just after (09, 18-19).
 
-![**Figure 6.** Default-model mean signed residual (actual minus forecast) by hour on the test period. Notice the positive bars as the commuter peaks build (07-08 and 16-17) and the negative bars just after them (09 and 18-19): the errors around the peaks are systematic.](figures/fig_residuals_by_hour.png){width=100%}
+![**Figure 10.** Default-model mean signed residual (actual minus forecast) by hour on the test period. Notice the positive bars as the commuter peaks build (07-08 and 16-17) and the negative bars just after them (09 and 18-19): the errors around the peaks are systematic.](figures/fig_residuals_by_hour.png){width=100%}
 
 # 4. Limitations and improvements
 

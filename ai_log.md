@@ -57,6 +57,17 @@ The records below are factual entries from the first development session (Claude
 * **Reference:** `train_evaluate.py::fit_select`; `checks/test_frozen.py`.
 * **Verification:** `pytest checks` - 32 passed (see `CHECKS.md`).
 
+## C3 - Checking: Lasso penalty selector drawn wrongly after the tab reorder (correction)
+
+*From a later Claude Code session, 8 Nov 2026, during the dashboard redesign.*
+
+* **Task:** check the restyled Inspect screen in a real browser. The redesign moved the Regularisation tab from first to fourth position, so it is hidden when the screen loads.
+* **Prompt (summary):** no prompt was about this control. The redesign request said "Start the app, look at every screen at desktop width and at ~400px width, fix overflow"; the assistant found the problem during that check.
+* **Response excerpt (translated from Hebrew):** "the penalty slider shows a wrong value after being moved to a hidden tab: the handle is at the right end with the value 0.001. I will replace it with a selectbox." More exactly, the label 0.001 was correct but the handle was drawn at the right end, although 0.001 is the first of the ten sorted options. The overflow script also flagged an `INPUT` extending past the viewport (right edge 1454 at 1440 px wide, 488 at 400 px). The hidden tab is the likely cause, but it was not isolated: the slider was not tried in a visible tab.
+* **Decision:** **TODO.**
+* **Reference:** `app.py::tab_regularisation`, `st.select_slider` replaced by `st.selectbox("Penalty for coefficient table", ...)`, default still the selected penalty; commit `607031b`.
+* **Verification:** after the change the overflow script no longer flagged the `INPUT` at either width, and the 400 px screenshot shows the selector at 0.001. A one-off Streamlit `AppTest` run (not part of `checks/`) showed intercept 148.033 at the default and 151.166 after selecting penalty 1.0, both equal to `outputs/lasso_coefficients.csv`, with no exception. `python -m pytest checks`: 32 passed. Changing the selection was not exercised by hand in the browser.
+
 ---
 
 *Template for further records:*

@@ -11,6 +11,8 @@ A Streamlit dashboard that replays historical hourly forecasts of total Capital 
 | Item | Location |
 |---|---|
 | Dashboard | [`app.py`](app.py) |
+| Dashboard presentation | [`ui.py`](ui.py) (design tokens, model colours, Plotly template, HTML components), [`.streamlit/config.toml`](.streamlit/config.toml) (theme and fonts) |
+| App screenshots | [`docs/screenshots/`](docs/screenshots/) |
 | Training / evaluation script | [`train_evaluate.py`](train_evaluate.py) |
 | Modules | [`data.py`](data.py), [`features.py`](features.py), [`models.py`](models.py) |
 | Executable checks and record of results | [`checks/`](checks/), [`CHECKS.md`](CHECKS.md) |
@@ -61,6 +63,7 @@ The repository already contains the saved models and results, so `streamlit run 
 * **Selection.** Each method's setting and the default model are chosen by validation MAE; ties go to the first grid value / the simpler method (order: baseline, ridge, lasso, poisson, bayes).
 * **Clipping.** Ridge, Lasso and Bayesian point forecasts are clipped at 0 for display and MAE/RMSE; raw means are kept in `raw_mean` and (Bayesian) used for intervals.
 * **App agreement.** The dashboard rebuilds inputs and applies the loaded model; its forecast must equal `predictions.csv` within `app_forecast_tolerance` (1e-6 rentals, displayed on the Forecast screen).
+* **Presentation.** `ui.py` and `.streamlit/config.toml` affect only how results are displayed. Fonts (Inter, Source Serif 4) load from Google Fonts; without internet access system fonts are used.
 
 ## Saved result files
 
