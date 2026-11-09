@@ -463,6 +463,10 @@ def screen_compare():
                 f'followed the fitted Poisson means the expected score would be {poisson_expected_score():.2f} nats. '
                 'Discrete count-probability score; not comparable with a Gaussian density score.</p></div>')
     ui.note("Default = lowest validation MAE, chosen and frozen before test scoring. Tie rule: " + cfg["tie_rule"])
+    sel = sorted((cfg["selected"][m]["validation_mae"], m) for m in M.METHODS)
+    ui.note(f"The two best validation scores ({LBL[sel[0][1]]} {sel[0][0]:.5f}, {LBL[sel[1][1]]} {sel[1][0]:.5f}) differ by "
+            f"{sel[1][0] - sel[0][0]:.5f} rentals per hour. The default follows the selection rule; it is not evidence "
+            "that one of these models forecasts better than the other.")
     ui.note("Training time: " + cfg["training_time_definition"] + ".")
     compare_forecasts_card()
     with st.expander("All validation candidates"):

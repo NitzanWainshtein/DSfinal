@@ -38,3 +38,17 @@ Command: `python -m pytest checks -v` (Python 3.13.18, 2026-11-08). Result: **32
 | `test_metrics.py::test_clipping_keeps_raw_mean` | Negative raw mean kept; point forecast clipped at 0 | PASSED |
 
 Manual check: `streamlit run app.py --server.headless true` started and `/_stcore/health` returned `ok`.
+
+## Fresh-checkout reproduction (2026-11-09)
+
+Run from a clean `git clone` of commit `dbabc9c` in a new virtual environment (Linux, Python 3.13.18), following the README exactly:
+
+| Step | Command | Outcome |
+|---|---|---|
+| Install | `python -m pip install -r requirements.txt` | All pinned versions installed (numpy 2.5.3, pandas 3.0.5, scipy 1.18.1, scikit-learn 1.9.1, streamlit 1.67.0, plotly 7.1.0, matplotlib 3.11.2, pytest 9.1.1) |
+| Regenerate | `python train_evaluate.py` | Finished in 8.2 s; default Bayesian, test MAE 48.955438, TV 0.2795 |
+| Compare | script comparing regenerated files with the committed ones | All 8 CSV files in `outputs/` and `count_distribution_tv.json` identical (numeric tolerance 1e-9); `config.json` identical apart from `created_utc`; only `train_time_s` in `metrics.csv` differs, as expected |
+| Checks | `python -m pytest checks` | 32 passed in 12.96 s (includes the four headless app-screen checks) |
+| Figures | `python make_figures.py` | All six figures regenerated without error |
+
+The app was also installed and run on Windows (Python 3.13.2) from the README instructions, and the Regularisation dropdown was exercised there in the browser (see `ai_log.md`, C3).

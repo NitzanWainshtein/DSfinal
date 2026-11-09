@@ -116,9 +116,11 @@ All fitted on training only: medians (previous-hour count 117, previous-day 117,
 
 For the Bayesian model, $\sigma^2$ is estimated on training data by alternating between the posterior mean and the mean squared training residual until convergence. Posterior: $A = \alpha I + \Phi^\top \Phi / \sigma^2$, $m$ solves $A m = \Phi^\top y / \sigma^2$, $S$ solves $A S = I$.
 
+This $\sigma^2$ is a **plug-in estimate**, not a fully Bayesian treatment of the noise: everything after it (posterior, predictive variance, intervals) is conditional on $\sigma^2 = 2349.1$ as if it were known. It omits uncertainty in $\sigma^2$ itself and makes no degrees-of-freedom correction. We chose it because it is simple, uses training data only, and is easy to verify. The omission is small here: with $n = 11{,}539$ training hours and $p = 60$ parameters, the corrected value $\mathrm{RSS}/(n-p)$ is 2361.4, which widens every interval by only 0.26% (validation 80% coverage would move from 71.2% to 71.24%). A fuller treatment, a prior on $\sigma^2$ giving Student-$t$ predictive intervals, would barely change the width at this sample size. So the undercoverage in section 3.3 is not caused by this estimator; it comes from the constant-variance assumption.
+
 Ridge, Lasso and Bayesian validation MAE decrease monotonically as the penalty/prior precision decreases and flatten at the bottom of the grid (Ridge 50.2283 at 0.001 and 50.2284 at 0.01). With 11,539 training hours and 59 columns, little regularisation is needed for prediction.
 
-**Default.** Lowest validation MAE: Bayesian 50.22829, Ridge 50.22830 (practically identical; with a near-flat prior the posterior mean approximates the least-squares fit). The tie rule was not needed. The default was frozen in `config.json` before test scoring.
+**Default.** Lowest validation MAE: Bayesian 50.22829, Ridge 50.22830 (practically identical; with a near-flat prior the posterior mean approximates the least-squares fit). The tie rule was not needed. The default was frozen in `config.json` before test scoring. The difference (0.00001 rentals per hour) has no practical meaning: Bayesian regression is the default because the stated rule picks it, not because it forecasts better than Ridge, and the dashboard says so next to the comparison table.
 
 ## 2.5 One Bayesian predictive calculation (actual input)
 
@@ -150,7 +152,7 @@ The three linear-Gaussian models reduce MAE by about 58% relative to the baselin
 
 *App: Compare models ("Poisson probability score"). Saved: `outputs/metrics.csv` (`table = poisson_log_score`).*
 
-The Poisson model assumes that, given the inputs, the hour's count follows a Poisson law with mean $\mu$, so its variance equals its mean, and that hours are independent. The selected penalty is the smallest tested, $10^{-7}$.
+The Poisson model assumes that, given the inputs, the hour's count follows a Poisson law with mean $\mu$, so its variance equals its mean. (Independence between hours matters for reading the summed log score as a joint likelihood; the per-hour average reported here does not need it.) The selected penalty is the smallest tested, $10^{-7}$.
 
 Mean negative log probability of the recorded count under $\mathrm{Poisson}(\mu)$: **25.71 nats** over 3,632 test hours. If the outcomes really followed $\mathrm{Poisson}(\mu)$ with the fitted means, the expected score would be the average Poisson entropy, 3.89 nats. The large value reflects both mean errors and a variance ($= \mu$) far too small for the observed variation.
 
@@ -167,7 +169,7 @@ The two constructions differ. The Poisson interval contains the central 80% or 9
 | Poisson | 80% | 23.5% | 37.5 |
 | Poisson | 95% | 34.8% | 57.3 |
 
-Both models undercover. Bayesian intervals have nearly constant width (noise variance dominates), while the errors are strongly heteroscedastic: by hour, 80% coverage is 100% at 03:00 (counts near zero, interval far too wide) and only 13.2% at 09:00. Coverage is similar on working days (72.9%) and other days (71.0%). Because the Gaussian approximation ignores that counts are non-negative, about 30% of test hours have a negative lower 95% endpoint (kept as saved). The Gaussian assumptions therefore do not match the test results: the noise is not constant across hours, counts cannot be negative, and the coefficient term is too small (about 0.7% of the variance for 2012-08-01 08:00) to compensate.
+Both models undercover, and the shortfall is larger than sampling noise. Because errors on the same day are correlated, we resampled whole test days (153 days, 5,000 day-block bootstrap draws from `outputs/predictions.csv`): 95% intervals for the observed coverage are Bayesian 80%: 71.0-73.6%, Bayesian 95%: 82.5-84.8%, Poisson 80%: 21.7-25.2%, Poisson 95%: 32.6-37.0%. None contains its nominal level. Bayesian intervals have nearly constant width (noise variance dominates), while the errors are strongly heteroscedastic: by hour, 80% coverage is 100% at 03:00 (counts near zero, interval far too wide) and only 13.2% at 09:00. Coverage is similar on working days (72.9%) and other days (71.0%). Because the Gaussian approximation ignores that counts are non-negative, about 30% of test hours have a negative lower 95% endpoint (kept as saved). The Gaussian assumptions therefore do not match the test results: the noise is not constant across hours, counts cannot be negative, and the coefficient term is too small (about 0.7% of the variance for 2012-08-01 08:00) to compensate.
 
 Poisson intervals are much narrower (variance $= \mu$) and miss most outcomes: hourly counts are strongly overdispersed relative to Poisson, and the mean itself is biased at peaks. Coverage is worst at commuting hours (80%: 1.3% at 06:00).
 

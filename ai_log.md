@@ -91,6 +91,17 @@ The team (Nitzan Wainshtein, Aviv Oz) developed the project with Claude (claude.
 * **Reference:** `docs/report_draft.md`, `report.pdf` (commits `ec26c7e` and later).
 * **Verification:** every added number was recomputed from `data/hour.csv`, `outputs/*.csv`, `outputs/lasso_coefficients.csv` and `models/preprocessor_full.json` (e.g. lag sources of 2012-10-09 08:00: 397 at 2012-10-08 08:00 with `holiday = 1`, 134 at 2012-10-02 08:00; Lasso coefficients at alpha 0.001 and 10; test mean 250.1 vs validation 272.8). The PDF was rebuilt and checked page by page.
 
+## C4 - Checking: independent review by a second AI assistant (some points accepted, some rejected)
+
+*9 Nov 2026.*
+
+* **Task:** get an outside critique of the whole submission before finalising it.
+* **Prompt (summary):** the team gave ChatGPT the course page, the brief and the public repository and asked it to act as a strict grader: build a checklist of every requirement, look for leakage and statistical errors, review the report and `ai_log.md`, and rank problems by severity. The prompt itself was drafted with Claude.
+* **Response excerpt:** no critical defect and no leakage found; "major" points: the Bayesian $\sigma^2$ is "a plug-in residual-variance estimate" and should be described as such; the default is chosen by "a statistically negligible difference" from Ridge; "independent reproducibility remains unverified". Minor points included: report coverage without sampling uncertainty, clarify that the Poisson independence assumption is not needed for the average log score, and use verbatim prompts in this log. The reviewer stated it executed no code, did not render the PDF and did not watch the recording.
+* **Decision:** each point was checked against the code and data with Claude before acting. Accepted: (1) the $\sigma^2$ point is correct; the report (section 2.4) now calls it a plug-in estimate and quantifies the omitted degrees-of-freedom correction (2349.1 to 2361.4, intervals 0.26% wider, validation 80% coverage 71.2% to 71.24%), so it does not explain the undercoverage; the model was not changed. (2) The near-tie is now stated in the report and next to the comparison table in the app. (3) A full fresh-checkout reproduction was run (see `CHECKS.md`). (4) Day-block bootstrap intervals for coverage were added to section 3.3. (5) The Poisson independence wording was corrected in section 3.2. Not adopted: the reviewer's concerns that the PDF and recording were unchecked, because both had already been checked (the PDF page by page; the video watched in full, I3); and replacing prompt summaries with verbatim transcripts, because most prompts were long, mixed Hebrew and English messages; the summaries state the actual request and the brief asks for the prompt, not a transcript.
+* **Reference:** `docs/report_draft.md` sections 2.4, 3.2, 3.3; `app.py::screen_compare`; `CHECKS.md` "Fresh-checkout reproduction".
+* **Verification:** fresh clone of `dbabc9c`: all saved result files regenerated identically, 32 checks passed; after the edits, `python -m pytest checks` 32 passed and a headless app run shows the new note on Compare models; bootstrap: Bayesian 80% coverage 72.3%, 95% interval 71.0-73.6% (153 test days, 5,000 draws).
+
 ---
 
 *Template for further records:*
