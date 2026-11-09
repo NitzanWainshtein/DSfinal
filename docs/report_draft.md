@@ -4,14 +4,14 @@ subtitle: "Foundations of Data Science - Final Project, Option B (Classical Data
 author: "Nitzan Wainshtein (209086263), Aviv Oz (207543927)"
 date: "TODO: submission date"
 papersize: a4
-geometry: margin=2.5cm
+geometry: margin=2.2cm
 header-includes:
   - \usepackage{float}
   - \floatplacement{figure}{H}
   - \usepackage{caption}
   - \captionsetup[figure]{labelformat=empty}
   - \usepackage{needspace}
-  - \AddToHook{cmd/section/before}{\needspace{18\baselineskip}}
+  - \AddToHook{cmd/section/before}{\needspace{10\baselineskip}}
   - \sloppy
   - \AddToHook{cmd/subsection/before}{\needspace{13\baselineskip}}
 ---
@@ -26,6 +26,8 @@ An operations analyst wants to anticipate busy hours and judge which forecasts c
 
 **Target, availability and excluded fields.** One row of `hour.csv` is one hour: the row stamped 08:00 covers 08:00-08:59, and `cnt` (= `casual` + `registered`) is the number of rentals started in it. A forecast is issued at the start of the hour, $t$. It may use (i) the calendar fields of $t$ (hour, weekday, month, holiday, working day), which are known in advance, and (ii) the count and weather of hours $s < t$ that have already ended. We assume that a completed hour's count and weather are available immediately. Excluded: `casual` and `registered` (their sum is the outcome), `instant` (a row number), and `season`, `yr`, `weathersit` and `atemp`, which are not among the required inputs; the target hour's own `weathersit`, `temp`, `hum` and `windspeed` would in any case only be known after the hour, so only the previous hour's weather is used. `dteday` and `hr` are used only to build the timestamp.
 
+\clearpage
+
 ## 1.2 Screens
 
 | Screen | What the analyst does and sees |
@@ -39,11 +41,11 @@ Figures 1 to 4 show the four screens at desktop width.
 
 ![**Figure 1.** Data overview screen, top part (the full screen is in `docs/screenshots/data_overview.png`). Notice the audit summary (17,379 of 17,544 expected hours observed, 165 missing) and the two working-day peaks in the daily rhythm.](screenshots/data_overview_top.png){width=88%}
 
-![**Figure 2.** Forecast one hour after *Reveal*, for 2012-08-01 08:00 with the default model. Notice the forecast of 664 rentals, the recorded 681 inside both intervals, and that observation noise dominates the predictive variance.](screenshots/forecast_one_hour.png){width=88%}
+![**Figure 2.** Forecast one hour after *Reveal*, for 2012-08-01 08:00 with the default model. Notice the forecast of 664 rentals, the recorded 681 inside both intervals, and that observation noise dominates the predictive variance.](screenshots/forecast_one_hour.png){width=100%}
 
-![**Figure 3.** Compare models screen. Notice the three linear-Gaussian models level at a test MAE near 48.96, well below Poisson and the seasonal baseline, and the default model marked in the table.](screenshots/compare_models.png){width=88%}
+![**Figure 3.** Compare models screen. Notice the three linear-Gaussian models level at a test MAE near 48.96, well below Poisson and the seasonal baseline, and the default model marked in the table.](screenshots/compare_models.png){width=100%}
 
-![**Figure 4.** Inspect model behaviour, *Interval coverage* tab. Notice that observed coverage is below nominal for both models at both levels, and that Bayesian 80% coverage falls sharply at commuter hours.](screenshots/inspect_behaviour.png){width=88%}
+![**Figure 4.** Inspect model behaviour, *Interval coverage* tab. Notice that observed coverage is below nominal for both models at both levels, and that Bayesian 80% coverage falls sharply at commuter hours.](screenshots/inspect_behaviour.png){width=100%}
 
 ## 1.3 Code organisation
 
@@ -77,6 +79,8 @@ Calendar inputs: hour 8, Wednesday (weekday 3), month 8, holiday 0, workingday 1
 | Previous-hour temp / hum / windspeed | 0.64 / 0.83 / 0.1343 | 2012-08-01 07:00 |
 
 No input was missing. Forecast: **664.4** rentals; 80% interval [602.1, 726.7]; 95% interval [569.1, 759.7]. After *Reveal*: recorded **681**, signed error +16.6, absolute error 16.6; both intervals cover the outcome. The 681 is not used for this forecast; it becomes the previous-hour input for 09:00. For comparison the seasonal baseline gives 392.0 (working-day 08:00 training mean) and Poisson 1018.4.
+
+\clearpage
 
 # 2. Data and modelling
 
@@ -125,6 +129,8 @@ Ridge, Lasso and Bayesian validation MAE decrease monotonically as the penalty/p
 ## 2.5 One Bayesian predictive calculation (actual input)
 
 For 2012-08-01 08:00 (section 1.5): $\mu_* = \phi^\top m = 664.378$; observation-noise variance $\sigma^2 = 2349.121$; coefficient-uncertainty variance $\phi^\top S \phi = 15.897$; total $v_* = 2365.018$ (sd 48.63). 80% interval $664.378 \pm 1.28155 \times 48.63 = [602.05, 726.70]$. Almost all predictive uncertainty is observation noise: with 11,539 training hours the coefficients are well determined.
+
+\clearpage
 
 # 3. Results
 
@@ -222,6 +228,8 @@ The ten largest absolute errors range from 304.6 to 413.8 rentals; 9 of 10 occur
 The pattern is systematic: underprediction as peaks build (07-08, 16-17) and overprediction just after (09, 18-19).
 
 ![**Figure 10.** Default-model mean signed residual (actual minus forecast) by hour on the test period. Notice the positive bars as the commuter peaks build (07-08 and 16-17) and the negative bars just after them (09 and 18-19): the errors around the peaks are systematic.](figures/fig_residuals_by_hour.png){width=100%}
+
+\clearpage
 
 # 4. Limitations and improvements
 
