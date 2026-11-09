@@ -73,10 +73,10 @@ The records below are factual entries from the first development session (Claude
 *From the claude.ai session, 9 Nov 2026.*
 
 * **Task:** produce the ~3-minute screen recording required by the brief (page 25): forecast and reveal, inputs table with source times, model comparison, one error inspection, a CSV download.
-* **Prompt (summary):** the team asked the assistant to make the recording itself, with on-screen captions; the team would add its own voice narration afterwards.
+* **Prompt (summary):** the team asked the assistant to make the recording itself, with on-screen captions, and then asked for a narration script suitable for text-to-speech (numbers, times and abbreviations written out in words) plus suggestions for a closing line.
 * **Response excerpt:** the assistant ran the dashboard (commit `ce4726f`) in a headless Chromium browser, drove it with a Playwright script (clicks, scrolling and a drawn mouse pointer), captured the browser frames, burned in English captions with ffmpeg, and added a title card and an end card. Captions were written from the values the app displays at each step (e.g. 664.4 forecast, 681 recorded, MAE 48.96, -57.7% vs baseline, largest error 2012-10-02 08:00, 80% coverage 72.3%).
-* **Decision:** the video content and captions are AI-produced; the voice narration is recorded by the team. **TODO:** confirm, and state whether you changed any caption.
-* **Reference:** final video file `bike_dashboard_demo.mp4` and caption file `captions.srt` (not stored in the repository; the video is linked from `README.md`).
+* **Decision:** the video content and captions are AI-produced. The narration is computer-generated: the team added it in Clipchamp with its text-to-speech feature, using the assistant's narration script, and placed each line on the timeline itself. **TODO:** confirm in your own words, and state whether you changed any caption or narration line.
+* **Reference:** published video https://youtu.be/gACUjhpPY7w (unlisted), linked from `README.md`. Source files `bike_dashboard_demo.mp4` and `captions.srt` are not stored in the repository.
 * **Verification:** the assistant inspected still frames at each step before and after rendering (screens, caption placement, revealed values). The recorded values match `outputs/predictions.csv` and `outputs/metrics.csv`. **TODO:** the team should watch the full video once and confirm.
 
 ---
