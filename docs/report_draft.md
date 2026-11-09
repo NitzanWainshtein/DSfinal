@@ -126,8 +126,6 @@ For 2012-08-01 08:00 (section 1.5): $\mu_* = \phi^\top m = 664.378$; observation
 
 # 3. Results
 
-All results in this section are read from the saved files and shown in the app; each subsection names the panel and file.
-
 ## 3.1 Five-model point errors (final test, 3,632 hours)
 
 *App: Compare models (tiles, "Test MAE by model", "Full final-test scores", "Forecasts against recorded counts"). Saved: `outputs/metrics.csv` (`table = point_scores`), `outputs/predictions.csv`.*

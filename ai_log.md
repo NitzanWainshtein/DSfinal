@@ -80,6 +80,17 @@ The team (Nitzan Wainshtein, Aviv Oz) developed the project with Claude (claude.
 * **Reference:** published video https://youtu.be/gACUjhpPY7w (unlisted), linked from `README.md`. Source files `bike_dashboard_demo.mp4` and `captions.srt` are not stored in the repository.
 * **Verification:** the assistant inspected still frames at each step before and after rendering (screens, caption placement, revealed values). The recorded values match `outputs/predictions.csv` and `outputs/metrics.csv`. The team watched the final narrated video in full before publishing it.
 
+## I4 - Implementation: drafting and completing the written report (disclosure)
+
+*From the claude.ai session, 8-9 Nov 2026.*
+
+* **Task:** write `report.pdf` with the four parts required on page 25 of the brief.
+* **Prompt (summary):** the assistant drafted the report from the saved results; on 9 Nov the team asked it to go through the report against the brief so that every required explanation is present.
+* **Response excerpt:** the assistant listed the brief's report requirements (pages 3-23 and 25) and compared them with the draft. Missing or partial items were: the target, availability assumption and excluded fields; the missing-input rule; references to app panels and saved files in the Results part; test versus validation for the default; the definition of training time; the Poisson count-law assumption; the difference between the two interval constructions; the interpretation of Lasso signs; and a check for missing inputs in the large-error cases. While checking case 3 (2012-10-09 08:00) against the data, it found that its 24-hour lag came from a public holiday and its 168-hour lag was case 1 (2012-10-02 08:00).
+* **Decision:** accepted the additions. The case-3 finding was added to section 4.1 as an observation, with the mechanism (an unusual hour carried forward by the lags) stated as a hypothesis, and as a fourth failure mode with a proposed change in section 4.2.
+* **Reference:** `docs/report_draft.md`, `report.pdf` (commits `ec26c7e` and later).
+* **Verification:** every added number was recomputed from `data/hour.csv`, `outputs/*.csv`, `outputs/lasso_coefficients.csv` and `models/preprocessor_full.json` (e.g. lag sources of 2012-10-09 08:00: 397 at 2012-10-08 08:00 with `holiday = 1`, 134 at 2012-10-02 08:00; Lasso coefficients at alpha 0.001 and 10; test mean 250.1 vs validation 272.8). The PDF was rebuilt and checked page by page.
+
 ---
 
 *Template for further records:*
