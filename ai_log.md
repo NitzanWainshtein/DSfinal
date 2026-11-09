@@ -2,7 +2,7 @@
 
 The brief (page 24) requires at least six records: two **design**, two **implementation**, two **checking/debugging**, each with task, prompt, response excerpt, decision, code/change reference and executed verification. At least two must describe a proposal that was **rejected or corrected**.
 
-The records below are factual entries from the first development session (Claude, claude.ai, 8 Nov 2026). The *Decision* fields marked **TODO** must be completed by the team in your own words after you have reviewed the code. Add further records from your own later sessions; keep only records you can stand behind.
+The team (Nitzan Wainshtein, Aviv Oz) developed the project with Claude (claude.ai, 8-9 Nov 2026) and Claude Code in VS Code. Each record below describes one interaction: what the assistant proposed, what the team decided and why, and how it was verified. Corrected or rejected proposals: I1, I2, C3.
 
 ---
 
@@ -65,7 +65,7 @@ The records below are factual entries from the first development session (Claude
 * **Task:** check the restyled Inspect screen in a real browser. The redesign moved the Regularisation tab from first to fourth position, so it is hidden when the screen loads.
 * **Prompt (summary):** no prompt was about this control. The redesign request said "Start the app, look at every screen at desktop width and at ~400px width, fix overflow"; the assistant found the problem during that check.
 * **Response excerpt (translated from Hebrew):** "the penalty slider shows a wrong value after being moved to a hidden tab: the handle is at the right end with the value 0.001. I will replace it with a selectbox." More exactly, the label 0.001 was correct but the handle was drawn at the right end, although 0.001 is the first of the ten sorted options. The overflow script also flagged an `INPUT` extending past the viewport (right edge 1454 at 1440 px wide, 488 at 400 px). The hidden tab is the likely cause, but it was not isolated: the slider was not tried in a visible tab.
-* **Decision:** **TODO.**
+* **Decision:** accepted the replacement. The dropdown offers exactly the same penalty values and the same default, and we checked that it shows the correct coefficients (see Verification). Since the slider has been removed, we did not investigate the root cause further; the hidden-tab explanation remains an unconfirmed hypothesis.
 * **Reference:** `app.py::tab_regularisation`, `st.select_slider` replaced by `st.selectbox("Penalty for coefficient table", ...)`, default still the selected penalty; commit `607031b`.
 * **Verification:** after the change the overflow script no longer flagged the `INPUT` at either width, and the 400 px screenshot shows the selector at 0.001. A one-off Streamlit `AppTest` run (not part of `checks/`) showed intercept 148.033 at the default and 151.166 after selecting penalty 1.0, both equal to `outputs/lasso_coefficients.csv`, with no exception. `python -m pytest checks`: 32 passed. Follow-up on 9 Nov 2026: the selection was exercised in the team's own Chrome (driven by Claude in Chrome on the locally running app): Inspect behaviour → Regularisation showed intercept 148.033 at 0.001; choosing 1 in the dropdown updated the table to intercept 151.166, `hour=00` 0 (marked zero), `hour=06` 1.5286, `hour=07` 35.1593, all equal to `outputs/lasso_coefficients.csv` for alpha = 1.
 
