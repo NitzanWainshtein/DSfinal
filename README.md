@@ -41,6 +41,7 @@ python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\
 python -m pip install -r requirements.txt
 python train_evaluate.py                               # ~10 s: regenerates config.json, models/, outputs/
 python make_figures.py                                 # regenerates docs/figures/ from the saved results (no refit)
+python coverage_bootstrap.py                           # day-block bootstrap intervals for test coverage (seed 0)
 python -m pytest checks                                # ~15 s: 32 checks
 streamlit run app.py                                   # opens http://localhost:8501
 ```
@@ -85,6 +86,8 @@ The repository already contains the saved models and results, so `streamlit run 
 **`outputs/count_distribution.csv`** / **`count_distribution_tv.json`**: shared bins (edges from training-count deciles, overflow bin above 369), counts and proportions for training and validation, and the binned total variation distance.
 
 **`outputs/largest_errors.csv`**: ten largest absolute test errors of the default model (ties by earlier timestamp).
+
+**`outputs/coverage_bootstrap.csv`** (written by `coverage_bootstrap.py`): `model`, `nominal` (80/95), `days`, `hours`, `coverage` (observed, inclusive endpoints), `ci95_low` / `ci95_high` (2.5% and 97.5% percentiles of the day-block bootstrap), `draws`, `seed`.
 
 ## Licence and attribution
 
